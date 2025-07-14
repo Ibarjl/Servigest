@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "chrome",
+            "name": "http://127.0.0.1:3000/UI_html/C_html.html",
+            "request": "launch",
+            "url": "http://127.0.0.1:3000/UI_html/C_html.html"
+        }
+    ]
+}
