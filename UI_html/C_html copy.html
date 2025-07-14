@@ -29,7 +29,7 @@
     <aside class="w-20 bg-slate-800 text-white flex flex-col items-center py-4 shrink-0">
         <div class="mb-8">
             <!-- Logo de Servigest -->
-            <img alt="Servigest Logo" class="h-10 w-10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKJaOph5_ACy-YF3GlVg7RgB2XIduut4OLLERKrmh6XQDpWEoIb2CaOUKC2qp3CE6Q_lc5siW8Utj_vLewoPd613Ve3GcYUe23C4p1DeKHEnP-6fb54VUB3jX5_GomrCXRlxSovsXesKxPXaBOC0YN6-VMMXoBbA9INQnQbYsSD-5Q-OH-7BQ9R8-OrB9_0q7PzSELv5iQmjip5LiEJSvjfORtfTZ2Xuc_xIHMtpzu8PyTg96edkRDGRudkkukFIBiH0QbANURk2XM"/>
+            <img alt="Servigest Logo" class="h-10 w-10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKJaOph5_ACy-YF3GlVg7RgB2XIduut4OLLERKrmh6XQDpWEoIb2CaOUKC2qp3CE6Q_lc5siW8Utj_vLewoPd613Ve3GcYUe23C4p1DeKHEnP-6fb54VUB3jX5_GomrCXRlxSovsXesKxPXaBOC0YN6-VMMXoBbA9INnQbYsSD-5Q-OH-7BQ9R8-OrB9_0q7PzSELv5iQmjip5LiEJSvjfORtfTZ2Xuc_xIHMtpzu8PyTg96edkRDGRudkkukFIBiH0QbANURk2XM"/>
         </div>
         <nav class="flex flex-col items-center space-y-2 flex-grow">
             <!-- Elementos de navegación -->
@@ -85,7 +85,7 @@
                     <span class="material-icons">add</span>
                 </button>
                 <div class="flex items-center">
-                    <img alt="User Avatar" class="h-9 w-9 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFcG_YsF-FM_b4w0qxJdUbjiGlRG23Wl1n8U-JW1i9yITv90jTPZ7pn5Q2-L-AHofLVj7kjmMeml7NtvMTtURyoumO4RCOkjG3rQm6hnrPTNMzw5af--CODgF-awRpuS_DW6AGP3c7jvKFtVQmcgMsQGqPg7zDyKi4cNgiTphrYuBTUUhNmX9rEEsPXBJnHt70HBoF-bL-Hy6WFQV61YORRJ0Wdj0GCx7-S_AbioaJpLf9jYg5pRN5s3zBo4RWE0vlAx8MeKWYKc"/>
+                    <img alt="User Avatar" class="h-9 w-9 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFcG_YsF-FM_b4w0qxJdUbjiGlRG23Wl1n8U-JW1i9yITv90jTPZ7pn5Q2-L-AHofLVj7kjmMeml7NtvMTtURyoumO4RCOkjG3rQm6hnrPTNMzw5af--CODgF-awRpuS_DW6AGP3c7jvKFtVQmcgMsQGqPg7zDyKi4cNgiTphrYuBTUUhNmX9rEEsPXBjnXt70HBoF-bL-Hy6WFQV61YORRJ0Wdj0GCx7-S_AbioaJpLf9jYg5pRN5s3zBo4RWE0vlAx8MeKWYKc"/>
                 </div>
             </div>
         </header>
@@ -119,8 +119,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-gray-500">Inventario Total</p>
-                            <!-- Interpolación de datos de Julia -->
-                            <p class="text-2xl font-bold text-gray-800">{{ inventory_summary["total_inventario"] }}</p>
+                            <p id="total-inventario" class="text-2xl font-bold text-gray-800">TOTAL_INVENTARIO_PLACEHOLDER</p>
                         </div>
                     </div>
                 </div>
@@ -131,8 +130,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-gray-500">En Stock</p>
-                            <!-- Interpolación de datos de Julia -->
-                            <p class="text-2xl font-bold text-gray-800">{{ inventory_summary["en_stock"] }}</p>
+                            <p id="en-stock" class="text-2xl font-bold text-gray-800">EN_STOCK_PLACEHOLDER</p>
                         </div>
                     </div>
                 </div>
@@ -143,8 +141,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-gray-500">Bajo Stock</p>
-                            <!-- Interpolación de datos de Julia -->
-                            <p class="text-2xl font-bold text-orange-500">{{ inventory_summary["bajo_stock"] }}</p>
+                            <p id="bajo-stock" class="text-2xl font-bold text-orange-500">BAJO_STOCK_PLACEHOLDER</p>
                         </div>
                     </div>
                 </div>
@@ -155,8 +152,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-gray-500">Sin Stock</p>
-                            <!-- Interpolación de datos de Julia -->
-                            <p class="text-2xl font-bold text-red-500">{{ inventory_summary["sin_stock"] }}</p>
+                            <p id="sin-stock" class="text-2xl font-bold text-red-500">SIN_STOCK_PLACEHOLDER</p>
                         </div>
                     </div>
                 </div>
@@ -168,22 +164,22 @@
                     <h2 class="text-lg font-semibold text-gray-800">Componentes</h2>
                     <div class="flex flex-wrap items-center gap-4">
                         <div class="flex space-x-2">
-                            <!-- Dropdowns de filtro (estáticos por ahora) -->
-                            <select class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500">
+                            <!-- Dropdowns de filtro (se populan dinámicamente con Julia) -->
+                            <select id="tipo-componente" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500">
                                 <option>Tipo de Componente</option>
-                                <option>Capacitor</option>
-                                <option>Resistor</option>
+                                <!-- Las opciones se insertan dinámicamente desde Julia -->
+                                COMPONENT_TYPES_OPTIONS_PLACEHOLDER
                             </select>
-                            <select class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500">
+                            <select id="marca-filter" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500">
                                 <option>Marca</option>
-                                <option>Marca A</option>
-                                <option>Marca B</option>
+                                <!-- Las opciones se insertan dinámicamente desde Julia -->
+                                BRANDS_OPTIONS_PLACEHOLDER
                             </select>
-                            <select class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500">
+                            <select id="estado-filter" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500">
                                 <option>Estado</option>
-                                <option>En Stock</option>
-                                <option>Bajo Stock</option>
-                                <option>Sin Stock</option>
+                                <option value="En Stock">En Stock</option>
+                                <option value="Bajo Stock">Bajo Stock</option>
+                                <option value="Sin Stock">Sin Stock</option>
                             </select>
                         </div>
                         <!-- Campo de búsqueda -->
@@ -227,52 +223,28 @@
                                 <th class="px-6 py-3" scope="col">Estado</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- Bucle de Julia para generar filas de componentes -->
-                            <% for component in components_list %>
-                            <tr class="bg-white border-b hover:bg-gray-50 cursor-pointer">
-                                <td class="px-6 py-4 font-medium text-gray-900">{{ component["codigo_parte"] }}</td>
-                                <td class="px-6 py-4">{{ component["nombre"] }}</td>
-                                <td class="px-6 py-4">{{ component["marca"] }}</td>
-                                <td class="px-6 py-4">{{ component["stock_actual"] }}</td>
-                                <td class="px-6 py-4">${{ component["precio_usd"] }}</td>
-                                <!-- Formateo de fecha con Julia -->
-                                <td class="px-6 py-4">{{ Dates.format(component["fecha_adquisicion"], "yyyy-mm-dd") }}</td>
-                                <td class="px-6 py-4">
-                                    <!-- Lógica Julia para asignar clases CSS según el estado del stock -->
-                                    <%
-                                        status_class = ""
-                                        if component["estado_stock"] == "En Stock"
-                                            status_class = "bg-green-100 text-green-800"
-                                        elseif component["estado_stock"] == "Bajo Stock"
-                                            status_class = "bg-orange-100 text-orange-800"
-                                        else # Sin Stock
-                                            status_class = "bg-red-100 text-red-800"
-                                        end
-                                    %>
-                                    <span class="{{ status_class }} text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">{{ component["estado_stock"] }}</span>
-                                </td>
-                            </tr>
-                            <% end %>
+                        <tbody id="components-table-body">
+                            <!-- Las filas se generan dinámicamente desde Julia -->
+                            COMPONENTS_TABLE_ROWS_PLACEHOLDER
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Gráficos de Tendencia y Análisis de Fallas (imágenes de placeholder) -->
+            <!-- Gráficos de Tendencia y Análisis de Fallas -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white p-6 rounded-lg shadow">
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Tendencia de Uso de Componentes</h2>
                     <div class="h-80">
-                        <!-- Placeholder para el gráfico de tendencia -->
-                        
+                        <!-- Se reemplaza dinámicamente desde Julia -->
+                        <img id="trend-chart" alt="Trend graph for component usage" class="w-full h-full object-contain" src="TREND_CHART_URL_PLACEHOLDER"/>
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow">
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Análisis de Fallas (Pareto)</h2>
                     <div class="h-80 flex items-center justify-center">
-                        <!-- Placeholder para el gráfico de Pareto -->
-                        
+                        <!-- Se reemplaza dinámicamente desde Julia -->
+                        <img id="pareto-chart" alt="Pareto chart for common failures" class="w-full h-full object-contain" src="PARETO_CHART_URL_PLACEHOLDER"/>
                     </div>
                 </div>
             </div>

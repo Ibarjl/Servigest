@@ -1,48 +1,38 @@
 -- ===================================
 -- BASE DE DATOS DE COMPONENTES Y EQUIPOS RF - POSTGRESQL
+-- VERSIÓN CORREGIDA Y LIMPIA
 -- ===================================
 
--- Crear tablas de referencia para valores tipo ENUM (SQL Server no soporta ENUM)
-CREATE TABLE tipo_equipo (
-    id_tipo INT IDENTITY PRIMARY KEY,
-    nombre NVARCHAR(50) UNIQUE NOT NULL
-);
-INSERT INTO tipo_equipo (nombre) VALUES
-('Transmisor'), ('Receptor'), ('Transceptor'), ('Analizador'),
-('Generador'), ('Medidor'), ('Amplificador'), ('Antena'), ('Otro');
+-- Eliminar base de datos si existe y crear nueva
+-- DROP DATABASE IF EXISTS servigest_rf;
+-- CREATE DATABASE servigest_rf;
 
-CREATE TABLE estado_equipo (
-    id_estado INT IDENTITY PRIMARY KEY,
-    nombre NVARCHAR(50) UNIQUE NOT NULL
+-- Crear tipos ENUM para PostgreSQL
+CREATE TYPE tipo_equipo_enum AS ENUM (
+    'Transmisor', 'Receptor', 'Transceptor', 'Analizador',
+    'Generador', 'Medidor', 'Amplificador', 'Antena', 'Otro'
 );
-INSERT INTO estado_equipo (nombre) VALUES
-('Operativo'), ('En reparación'), ('Fuera de servicio'), ('En calibración');
 
-CREATE TABLE estado_reparacion (
-    id_estado INT IDENTITY PRIMARY KEY,
-    nombre NVARCHAR(50) UNIQUE NOT NULL
+CREATE TYPE estado_equipo_enum AS ENUM (
+    'Operativo', 'En reparación', 'Fuera de servicio', 'En calibración'
 );
-INSERT INTO estado_reparacion (nombre) VALUES
-('En progreso'), ('Completada'), ('Pendiente de partes'), ('Cancelada');
 
-CREATE TABLE prioridad (
-    id_prioridad INT IDENTITY PRIMARY KEY,
-    nombre NVARCHAR(50) UNIQUE NOT NULL
+CREATE TYPE estado_reparacion_enum AS ENUM (
+    'En progreso', 'Completada', 'Pendiente de partes', 'Cancelada'
 );
-INSERT INTO prioridad (nombre) VALUES
-('Baja'), ('Media'), ('Alta'), ('Crítica');
 
-CREATE TABLE resultado_calibracion (
-    id_resultado INT IDENTITY PRIMARY KEY,
-    nombre NVARCHAR(50) UNIQUE NOT NULL
+CREATE TYPE prioridad_enum AS ENUM (
+    'Baja', 'Media', 'Alta', 'Crítica'
 );
-INSERT INTO resultado_calibracion (nombre) VALUES
-('Aprobado'), ('Rechazado'), ('Aprobado con ajustes');
+
+CREATE TYPE resultado_calibracion_enum AS ENUM (
+    'Aprobado', 'Rechazado', 'Aprobado con ajustes'
+);
 
 -- Tabla de categorías de componentes
 CREATE TABLE categorias_componentes (
     id_categoria SERIAL PRIMARY KEY,
-    nombre VARCHAR(50) NOT NULL,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
     descripcion TEXT
 );
 
@@ -78,44 +68,45 @@ CREATE TABLE componentes_rf (
     frecuencia_min_mhz DECIMAL(10,3),
     frecuencia_max_mhz DECIMAL(10,3),
     potencia_max_w DECIMAL(8,3),
+    voltaje_operacion_v DECIMAL(6,2),
+    temperatura_min_c INTEGER,
+    temperatura_max_c INTEGER,
+    impedancia_ohm INTEGER,
+    ganancia_db DECIMAL(5,2),
+    vswr_max DECIMAL(3,2),
+    precio_usd DECIMAL(10,2),
+    stock_actual INTEGER DEFAULT 0,
+    stock_minimo INTEGER DEFAULT 0,
+    ubicacion_almacen VARCHAR(20),
+    fecha_adquisicion DATE,
+    activo BOOLEAN DEFAULT TRUE,
+    notas TEXT
+);
+
+-- Tabla de equipos RF
 CREATE TABLE equipos_rf (
-    id_equipo INT IDENTITY PRIMARY KEY,
+    id_equipo SERIAL PRIMARY KEY,
     numero_serie VARCHAR(50) UNIQUE NOT NULL,
     modelo VARCHAR(100) NOT NULL,
-    id_fabricante INT FOREIGN KEY REFERENCES fabricantes(id_fabricante),
-    id_tipo_equipo INT FOREIGN KEY REFERENCES tipo_equipo(id_tipo),
+    id_fabricante INTEGER REFERENCES fabricantes(id_fabricante),
+    tipo_equipo tipo_equipo_enum NOT NULL,
     frecuencia_min_mhz DECIMAL(10,3),
     frecuencia_max_mhz DECIMAL(10,3),
     potencia_salida_w DECIMAL(8,3),
     voltaje_alimentacion_v DECIMAL(6,2),
     consumo_corriente_a DECIMAL(6,3),
     fecha_adquisicion DATE,
-    id_estado INT FOREIGN KEY REFERENCES estado_equipo(id_estado),
+    estado estado_equipo_enum DEFAULT 'Operativo',
     ubicacion VARCHAR(100),
     responsable VARCHAR(100),
     valor_usd DECIMAL(10,2),
     manual_url VARCHAR(255),
-    calibracion_requerida BIT DEFAULT 0,
+    calibracion_requerida BOOLEAN DEFAULT FALSE,
     proxima_calibracion DATE,
     notas TEXT
 );
-    frecuencia_min_mhz DECIMAL(10,3),
-    frecuencia_max_mhz DECIMAL(10,3),
-CREATE TABLE historial_reparaciones (
-    id_reparacion INT IDENTITY PRIMARY KEY,
-    id_equipo INT FOREIGN KEY REFERENCES equipos_rf(id_equipo),
-    fecha_inicio DATE NOT NULL,
-    fecha_fin DATE,
-    tecnico_asignado VARCHAR(100),
-    problema_reportado TEXT,
-    diagnostico TEXT,
-    solucion_aplicada TEXT,
-    componentes_reemplazados TEXT,
-    costo_reparacion DECIMAL(8,2),
-    tiempo_reparacion_horas DECIMAL(5,1),
-    id_estado_reparacion INT FOREIGN KEY REFERENCES estado_reparacion(id_estado),
-    id_prioridad INT FOREIGN KEY REFERENCES prioridad(id_prioridad)
-);
+
+-- Tabla de historial de reparaciones
 CREATE TABLE historial_reparaciones (
     id_reparacion SERIAL PRIMARY KEY,
     id_equipo INTEGER REFERENCES equipos_rf(id_equipo),
@@ -126,18 +117,19 @@ CREATE TABLE historial_reparaciones (
     diagnostico TEXT,
     solucion_aplicada TEXT,
     componentes_reemplazados TEXT,
-CREATE TABLE calibraciones (
-    id_calibracion INT IDENTITY PRIMARY KEY,
-    id_equipo INT FOREIGN KEY REFERENCES equipos_rf(id_equipo),
-    fecha_calibracion DATE NOT NULL,
-    tecnico VARCHAR(100),
-    laboratorio VARCHAR(100),
-    certificado_numero VARCHAR(50),
-    id_resultado INT FOREIGN KEY REFERENCES resultado_calibracion(id_resultado),
-    tolerancia_cumplida BIT,
-    proxima_fecha DATE,
-    costo DECIMAL(8,2),
-    observaciones TEXT
+    costo_reparacion DECIMAL(8,2),
+    tiempo_reparacion_horas DECIMAL(5,1),
+    estado_reparacion estado_reparacion_enum DEFAULT 'En progreso',
+    prioridad prioridad_enum DEFAULT 'Media'
+);
+
+-- Tabla de componentes usados en reparaciones
+CREATE TABLE componentes_usados_reparacion (
+    id_uso SERIAL PRIMARY KEY,
+    id_reparacion INTEGER REFERENCES historial_reparaciones(id_reparacion),
+    id_componente INTEGER REFERENCES componentes_rf(id_componente),
+    cantidad_usada INTEGER NOT NULL,
+    costo_unitario DECIMAL(8,2)
 );
 
 -- Tabla de calibraciones
@@ -194,22 +186,17 @@ INSERT INTO proveedores (nombre, contacto, telefono, email, direccion, tiempo_en
 ('Richardson RFPD', 'Luis Martínez', '+1-630-208-2700', 'luis.martinez@richardsonrfpd.com', '40W267 Keslinger Rd, LaFox, IL', 4);
 
 -- Insertar componentes RF
-INSERT INTO componentes_rf (codigo_parte, nombre, id_categoria, id_fabricante, descripcion, frecuencia_min_mhz, frecuencia_max_mhz, potencia_max_w, voltaje_operacion_v, temperatura_min_c, temperatura_max_c, impedancia_ohm, ganancia_db, vswr_max, precio_usd, stock_actual, stock_minimo, ubicacion_almacen) VALUES
-('ADL5202', 'Amplificador de Ganancia Variable', 6, 1, 'Amplificador de ganancia variable de 400 MHz a 4 GHz', 400, 4000, 0.1, 5.0, -40, 85, 50, 20.5, 1.5, 24.50, 15, 5, 'A-01-03'),
-('ERA-3SM+', 'Amplificador Bajo Ruido', 6, 2, 'Amplificador monolítico de bajo ruido DC-8 GHz', 0.01, 8000, 0.02, 5.0, -55, 85, 50, 13.0, 2.0, 8.95, 25, 10, 'A-01-05'),
-('PE4302', 'Atenuador Digital', 10, 5, 'Atenuador digital de 6 bits, 9 kHz a 4 GHz', 0.009, 4000, 0.5, 5.0, -40, 85, 50, -31.5, 1.4, 12.75, 8, 3, 'B-02-01'),
-('ADF4351', 'Sintetizador PLL', 8, 1, 'Sintetizador de frecuencia PLL con VCO integrado', 35, 4400, 0.01, 3.3, -40, 85, 50, 0, 1.5, 18.90, 12, 5, 'C-03-02'),
-('SKY13271-313LF', 'Switch RF', 1, 7, 'Switch SP4T de 50 MHz a 4 GHz', 50, 4000, 1.0, 2.7, -40, 85, 50, -0.7, 1.3, 3.25, 30, 15, 'A-01-08'),
-('SMA-F-CONN', 'Conector SMA Hembra', 3, 10, 'Conector SMA hembra para montaje en panel', 0, 18000, 5, 0, -65, 155, 50, 0, 1.15, 2.85, 50, 20, 'D-04-01'),
-('RG-58-CABLE', 'Cable Coaxial RG-58', 4, 9, 'Cable coaxial RG-58 50 ohm por metro', 0, 1000, 0.2, 0, -40, 80, 50, 0, 1.5, 1.20, 100, 50, 'E-05-01'),
-('BPF-2400', 'Filtro Pasa Banda 2.4 GHz', 5, 2, 'Filtro pasa banda centrado en 2.4 GHz', 2300, 2500, 1.0, 0, -40, 85, 50, -2.5, 1.5, 15.60, 10, 5, 'B-02-03'),
-('LNA-1000', 'Amplificador LNA 1 GHz', 6, 4, 'Amplificador de bajo ruido para 1 GHz', 800, 1200, 0.05, 12.0, -40, 85, 50, 25.0, 1.8, 45.30, 6, 3, 'A-01-06'),
-('VCO-5800', 'Oscilador VCO 5.8 GHz', 8, 6, 'Oscilador controlado por voltaje para 5.8 GHz', 5600, 6000, 0.01, 5.0, -40, 85, 50, 5.0, 1.2, 28.75, 4, 2, 'C-03-04'),
-('BALUN-1500', 'Balun 1:4 1.5 GHz', 2, 2, 'Transformador balun 1:4 para 1.5 GHz', 800, 1500, 2.0, 0, -55, 125, 50, -0.5, 1.3, 12.40, 8, 4, 'B-02-05'),
-('MIXER-2000', 'Mezclador DBM 2 GHz', 7, 1, 'Mezclador doble balanceado para 2 GHz', 1500, 2500, 0.02, 0, -40, 85, 50, -6.5, 1.8, 35.60, 5, 2, 'C-03-06'),
-('CRYSTAL-10M', 'Cristal de Cuarzo 10 MHz', 8, 6, 'Oscilador de cristal de precisión 10 MHz', 10, 10, 0.001, 5.0, -20, 70, 50, 0, 1.1, 8.75, 20, 10, 'C-03-01'),
-('PATCH-2.4G', 'Antena Patch 2.4 GHz', 9, 9, 'Antena patch direccional para 2.4 GHz', 2400, 2485, 0, 0, -40, 85, 50, 8.5, 1.5, 28.90, 12, 6, 'D-04-03'),
-('SPLITTER-4WAY', 'Divisor de Potencia 4 Vías', 2, 2, 'Divisor de potencia 4 vías 800-2500 MHz', 800, 2500, 20, 0, -55, 85, 50, -6.0, 1.4, 45.20, 7, 3, 'B-02-07');
+INSERT INTO componentes_rf (codigo_parte, nombre, id_categoria, id_fabricante, descripcion, frecuencia_min_mhz, frecuencia_max_mhz, potencia_max_w, voltaje_operacion_v, temperatura_min_c, temperatura_max_c, impedancia_ohm, ganancia_db, vswr_max, precio_usd, stock_actual, stock_minimo, ubicacion_almacen, fecha_adquisicion) VALUES
+('ADL5202', 'Amplificador de Ganancia Variable', 6, 1, 'Amplificador de ganancia variable de 400 MHz a 4 GHz', 400, 4000, 0.1, 5.0, -40, 85, 50, 20.5, 1.5, 24.50, 15, 5, 'A-01-03', '2023-05-12'),
+('ERA-3SM+', 'Amplificador Bajo Ruido', 6, 2, 'Amplificador monolítico de bajo ruido DC-8 GHz', 0.01, 8000, 0.02, 5.0, -55, 85, 50, 13.0, 2.0, 8.95, 25, 10, 'A-01-05', '2023-04-28'),
+('PE4302', 'Atenuador Digital', 10, 5, 'Atenuador digital de 6 bits, 9 kHz a 4 GHz', 0.009, 4000, 0.5, 5.0, -40, 85, 50, -31.5, 1.4, 12.75, 8, 3, 'B-02-01', '2023-03-10'),
+('ADF4351', 'Sintetizador PLL', 8, 1, 'Sintetizador de frecuencia PLL con VCO integrado', 35, 4400, 0.01, 3.3, -40, 85, 50, 0, 1.5, 18.90, 12, 5, 'C-03-02', '2023-02-15'),
+('SKY13271-313LF', 'Switch RF', 1, 7, 'Switch SP4T de 50 MHz a 4 GHz', 50, 4000, 1.0, 2.7, -40, 85, 50, -0.7, 1.3, 3.25, 30, 15, 'A-01-08', '2023-01-20'),
+('SMA-F-CONN', 'Conector SMA Hembra', 3, 10, 'Conector SMA hembra para montaje en panel', 0, 18000, 5, 0, -65, 155, 50, 0, 1.15, 2.85, 50, 20, 'D-04-01', '2023-06-30'),
+('RG-58-CABLE', 'Cable Coaxial RG-58', 4, 9, 'Cable coaxial RG-58 50 ohm por metro', 0, 1000, 0.2, 0, -40, 80, 50, 0, 1.5, 1.20, 100, 50, 'E-05-01', '2023-07-08'),
+('BPF-2400', 'Filtro Pasa Banda 2.4 GHz', 5, 2, 'Filtro pasa banda centrado en 2.4 GHz', 2300, 2500, 1.0, 0, -40, 85, 50, -2.5, 1.5, 15.60, 10, 5, 'B-02-03', '2023-08-14'),
+('LNA-1000', 'Amplificador LNA 1 GHz', 6, 4, 'Amplificador de bajo ruido para 1 GHz', 800, 1200, 0.05, 12.0, -40, 85, 50, 25.0, 1.8, 45.30, 6, 3, 'A-01-06', '2023-09-22'),
+('VCO-5800', 'Oscilador VCO 5.8 GHz', 8, 6, 'Oscilador controlado por voltaje para 5.8 GHz', 5600, 6000, 0.01, 5.0, -40, 85, 50, 5.0, 1.2, 28.75, 4, 2, 'C-03-04', '2023-10-11');
 
 -- Insertar equipos RF
 INSERT INTO equipos_rf (numero_serie, modelo, id_fabricante, tipo_equipo, frecuencia_min_mhz, frecuencia_max_mhz, potencia_salida_w, voltaje_alimentacion_v, consumo_corriente_a, fecha_adquisicion, estado, ubicacion, responsable, valor_usd, calibracion_requerida, proxima_calibracion) VALUES
@@ -218,28 +205,24 @@ INSERT INTO equipos_rf (numero_serie, modelo, id_fabricante, tipo_equipo, frecue
 ('KS009876', 'N5181B', 3, 'Generador', 9, 3000, 1.0, 110, 1.8, '2023-03-10', 'En calibración', 'Lab-RF-03', 'Miguel Santos', 18000.00, TRUE, '2024-09-10'),
 ('ADI002345', 'AD-FMCOMMS5', 1, 'Transceptor', 70, 6000, 0.01, 12, 2.0, '2023-08-05', 'Operativo', 'Desarrollo-01', 'Laura Vega', 3500.00, FALSE, NULL),
 ('RS007890', 'NRP-Z11', 4, 'Medidor', 10, 8000, 0, 15, 0.5, '2022-11-30', 'Operativo', 'Lab-RF-01', 'Carlos Méndez', 4200.00, TRUE, '2025-05-30'),
-('MC003456', 'ZHL-100W-52+', 2, 'Amplificador', 0.8, 1000, 100, 28, 12.0, '2023-05-18', 'En reparación', 'Taller-RF', 'Pedro Ruiz', 2800.00, FALSE, NULL),
-('ANT001122', 'HG2458U', 9, 'Antena', 2400, 2500, 0, 0, 0, '2023-02-28', 'Operativo', 'Azotea-Norte', 'Luis Herrera', 150.00, FALSE, NULL),
-('TX004455', 'BLF188XR', 8, 'Transmisor', 88, 108, 300, 50, 8.5, '2022-12-15', 'Operativo', 'Transmisor-FM', 'Roberto Silva', 1200.00, TRUE, '2024-12-15'),
-('RX006677', 'RTL-SDR', 1, 'Receptor', 24, 1766, 0, 5, 0.3, '2023-07-12', 'Operativo', 'Desarrollo-02', 'Sandra Morales', 25.00, FALSE, NULL),
-('OSC008899', 'SG382', 1, 'Generador', 0.001, 2025, 0.013, 110, 1.2, '2023-04-25', 'Operativo', 'Lab-RF-02', 'Ana Torres', 8500.00, TRUE, '2025-04-25'),
-('SA012345', 'FSV3030', 4, 'Analizador', 10, 30000, 0.001, 230, 2.8, '2024-01-20', 'Operativo', 'Lab-RF-04', 'Elena Ruiz', 42000.00, TRUE, '2025-01-20'),
-('AMP005566', 'ZVA-183+', 2, 'Amplificador', 10, 18000, 1, 15, 3.5, '2023-09-12', 'Operativo', 'Lab-RF-03', 'Miguel Santos', 1850.00, FALSE, NULL);
+('MC003456', 'ZHL-100W-52+', 2, 'Amplificador', 0.8, 1000, 100, 28, 12.0, '2023-05-18', 'En reparación', 'Taller-RF', 'Pedro Ruiz', 2800.00, FALSE, NULL);
 
 -- Insertar historial de reparaciones
 INSERT INTO historial_reparaciones (id_equipo, fecha_inicio, fecha_fin, tecnico_asignado, problema_reportado, diagnostico, solucion_aplicada, componentes_reemplazados, costo_reparacion, tiempo_reparacion_horas, estado_reparacion, prioridad) VALUES
 (6, '2024-06-15', '2024-06-18', 'Pedro Ruiz', 'Amplificador no enciende', 'Fusible quemado y regulador de voltaje dañado', 'Reemplazar fusible F1 y regulador U3', 'Fusible 10A, LM7805', 45.20, 4.5, 'Completada', 'Media'),
 (3, '2024-07-01', NULL, 'Miguel Santos', 'Deriva de frecuencia fuera de especificación', 'Oscilador de referencia inestable', 'Enviar a calibración externa', 'Ninguno', 350.00, 0, 'En progreso', 'Alta'),
-(5, '2024-05-10', '2024-05-12', 'Carlos Méndez', 'Lectura errática de potencia', 'Sensor de potencia descalibrado', 'Recalibración del sensor', 'Ninguno', 180.00, 8.0, 'Completada', 'Media'),
-(8, '2024-03-20', '2024-03-22', 'Roberto Silva', 'Potencia de salida reducida', 'Transistor de salida degradado', 'Reemplazar transistor Q15', 'BLF188XR', 125.80, 3.2, 'Completada', 'Alta'),
-(1, '2024-08-05', '2024-08-07', 'Ana Torres', 'Error en medición de S11', 'Conector de entrada dañado', 'Reemplazar conector SMA', 'SMA-F-CONN', 28.50, 2.1, 'Completada', 'Baja'),
-(11, '2024-06-25', NULL, 'Elena Ruiz', 'Ruido excesivo en mediciones', 'Investigando origen del ruido', 'En diagnóstico', 'Pendiente', 0.00, 12.5, 'En progreso', 'Media'),
-(12, '2024-07-10', '2024-07-12', 'Miguel Santos', 'Ganancia fuera de especificación', 'Transistor de entrada degradado', 'Reemplazar Q2 y recalibrar', 'ERA-3SM+', 85.40, 6.2, 'Completada', 'Baja');
+(5, '2024-05-10', '2024-05-12', 'Carlos Méndez', 'Lectura errática de potencia', 'Sensor de potencia descalibrado', 'Recalibración del sensor', 'Ninguno', 180.00, 8.0, 'Completada', 'Media');
 
--- Insertar componentes usados en reparaciones
-INSERT INTO componentes_usados_reparacion (id_reparacion, id_componente, cantidad_usada) VALUES
-(5, 6, 1),  -- SMA-F-CONN para reparación 5
-GO
+-- Insertar calibraciones
+INSERT INTO calibraciones (id_equipo, fecha_calibracion, tecnico, laboratorio, certificado_numero, resultado, tolerancia_cumplida, proxima_fecha, costo, observaciones) VALUES
+(1, '2024-01-15', 'Carlos Méndez', 'Lab Calibración RF', 'CERT-2024-001', 'Aprobado', TRUE, '2025-01-15', 850.00, 'Calibración dentro de especificaciones'),
+(2, '2023-12-20', 'Ana Torres', 'MetroRF Calibraciones', 'CERT-2023-045', 'Aprobado', TRUE, '2024-12-20', 1200.00, 'Requiere ajuste menor en banda alta'),
+(5, '2024-05-30', 'Carlos Méndez', 'Lab Calibración RF', 'CERT-2024-025', 'Aprobado con ajustes', TRUE, '2025-05-30', 450.00, 'Ajustado factor de corrección');
+
+-- ===================================
+-- VISTAS ESPECIALIZADAS
+-- ===================================
+
 -- Vista de componentes con bajo stock
 CREATE VIEW componentes_bajo_stock AS
 SELECT 
@@ -255,23 +238,24 @@ FROM componentes_rf c
 JOIN categorias_componentes cat ON c.id_categoria = cat.id_categoria
 JOIN fabricantes f ON c.id_fabricante = f.id_fabricante
 WHERE c.stock_actual <= c.stock_minimo;
-GO
+
 -- Vista de equipos que requieren calibración próxima
 CREATE VIEW equipos_calibracion_proxima AS
 SELECT 
     e.numero_serie,
     e.modelo,
     f.nombre AS fabricante,
-    t.nombre AS tipo_equipo,
+    e.tipo_equipo,
     e.ubicacion,
     e.responsable,
     e.proxima_calibracion,
-    DATEDIFF(DAY, GETDATE(), e.proxima_calibracion) AS dias_restantes
+    (e.proxima_calibracion - CURRENT_DATE) AS dias_restantes
 FROM equipos_rf e
 JOIN fabricantes f ON e.id_fabricante = f.id_fabricante
-JOIN tipo_equipo t ON e.id_tipo_equipo = t.id_tipo
-WHERE e.calibracion_requerida = 1
-GO
+WHERE e.calibracion_requerida = TRUE
+  AND e.proxima_calibracion IS NOT NULL
+  AND e.proxima_calibracion <= CURRENT_DATE + INTERVAL '30 days';
+
 -- Vista de reparaciones pendientes
 CREATE VIEW reparaciones_pendientes AS
 SELECT 
@@ -281,13 +265,13 @@ SELECT
     r.fecha_inicio,
     r.tecnico_asignado,
     r.problema_reportado,
-    er.nombre AS estado_reparacion,
-    p.nombre AS prioridad,
-    DATEDIFF(DAY, r.fecha_inicio, GETDATE()) AS dias_transcurridos
+    r.estado_reparacion,
+    r.prioridad,
+    (CURRENT_DATE - r.fecha_inicio) AS dias_transcurridos
 FROM historial_reparaciones r
 JOIN equipos_rf e ON r.id_equipo = e.id_equipo
-JOIN estado_reparacion er ON r.id_estado_reparacion = er.id_estado
-GO
+WHERE r.fecha_fin IS NULL;
+
 -- Vista resumen de costos de reparación por equipo
 CREATE VIEW resumen_costos_reparacion AS
 SELECT 
@@ -295,40 +279,9 @@ SELECT
     e.modelo,
     f.nombre AS fabricante,
     COUNT(r.id_reparacion) AS total_reparaciones,
-    ISNULL(SUM(r.costo_reparacion), 0) AS costo_total,
-    ISNULL(AVG(r.costo_reparacion), 0) AS costo_promedio,
-    ISNULL(SUM(r.tiempo_reparacion_horas), 0) AS tiempo_total_horas
-FROM equipos_rf e
-JOIN fabricantes f ON e.id_fabricante = f.id_fabricante
-LEFT JOIN historial_reparaciones r ON e.id_equipo = r.id_equipo
-GROUP BY e.id_equipo, e.numero_serie, e.modelo, f.nombre;
-GO
--- Vista de equipos por estado
-CREATE VIEW equipos_por_estado AS
-SELECT 
-    e.id_estado,
-    es.nombre AS estado,
-    COUNT(*) AS cantidad_equipos,
-    ROUND(AVG(e.valor_usd), 2) AS valor_promedio
-FROM equipos_rf e
-JOIN estado_equipo es ON e.id_estado = es.id_estado
-GO
--- Vista de inventario crítico
-CREATE VIEW inventario_critico AS
-SELECT 
-    c.codigo_parte,
-    c.nombre,
-    cat.nombre AS categoria,
-    c.stock_actual,
-    c.stock_minimo,
-    (c.stock_minimo - c.stock_actual) AS deficit,
-    c.precio_usd,
-    (c.precio_usd * (c.stock_minimo - c.stock_actual)) AS costo_reposicion
-FROM componentes_rf c
-JOIN categorias_componentes cat ON c.id_categoria = cat.id_categoria
-WHERE c.stock_actual < c.stock_minimo
-ORDER BY deficit DESC;
-GO
+    COALESCE(SUM(r.costo_reparacion), 0) AS costo_total,
+    COALESCE(AVG(r.costo_reparacion), 0) AS costo_promedio,
+    COALESCE(SUM(r.tiempo_reparacion_horas), 0) AS tiempo_total_horas
 FROM equipos_rf e
 JOIN fabricantes f ON e.id_fabricante = f.id_fabricante
 LEFT JOIN historial_reparaciones r ON e.id_equipo = r.id_equipo
@@ -339,7 +292,8 @@ CREATE VIEW equipos_por_estado AS
 SELECT 
     estado,
     COUNT(*) AS cantidad_equipos,
-    ROUND(AVG(valor_usd), 2) AS valor_promedio
+    ROUND(AVG(valor_usd), 2) AS valor_promedio,
+    SUM(valor_usd) AS valor_total
 FROM equipos_rf 
 GROUP BY estado
 ORDER BY cantidad_equipos DESC;
@@ -365,7 +319,10 @@ ORDER BY deficit DESC;
 -- ===================================
 
 -- Función para calcular el próximo mantenimiento preventivo
-CREATE OR REPLACE FUNCTION calcular_proximo_mantenimiento(fecha_ultimo_mantenimiento DATE, tipo_equipo tipo_equipo_enum)
+CREATE OR REPLACE FUNCTION calcular_proximo_mantenimiento(
+    fecha_ultimo_mantenimiento DATE, 
+    tipo_equipo tipo_equipo_enum
+)
 RETURNS DATE AS $$
 BEGIN
     CASE tipo_equipo
@@ -412,13 +369,14 @@ $$ LANGUAGE plpgsql;
 CREATE INDEX idx_componentes_categoria ON componentes_rf(id_categoria);
 CREATE INDEX idx_componentes_fabricante ON componentes_rf(id_fabricante);
 CREATE INDEX idx_componentes_stock ON componentes_rf(stock_actual, stock_minimo);
+CREATE INDEX idx_componentes_codigo ON componentes_rf(codigo_parte);
 CREATE INDEX idx_equipos_estado ON equipos_rf(estado);
 CREATE INDEX idx_equipos_calibracion ON equipos_rf(proxima_calibracion);
+CREATE INDEX idx_equipos_tipo ON equipos_rf(tipo_equipo);
 CREATE INDEX idx_reparaciones_estado ON historial_reparaciones(estado_reparacion);
 CREATE INDEX idx_reparaciones_fecha ON historial_reparaciones(fecha_inicio);
 CREATE INDEX idx_reparaciones_tecnico ON historial_reparaciones(tecnico_asignado);
 CREATE INDEX idx_calibraciones_fecha ON calibraciones(fecha_calibracion);
-CREATE INDEX idx_equipos_tipo ON equipos_rf(tipo_equipo);
 
 -- ===================================
 -- TRIGGERS PARA AUTOMATIZACIÓN
@@ -460,7 +418,6 @@ CREATE TRIGGER trg_fecha_fin_reparacion
 -- CONSULTAS DE EJEMPLO ÚTILES
 -- ===================================
 
--- Comentarios con consultas de ejemplo
 /*
 -- Consulta: Equipos que necesitan calibración en los próximos 30 días
 SELECT * FROM equipos_calibracion_proxima;
@@ -487,4 +444,7 @@ FROM equipos_rf e
 LEFT JOIN historial_reparaciones r ON e.id_equipo = r.id_equipo
 GROUP BY e.id_equipo, e.numero_serie, e.modelo
 ORDER BY costo_total_reparaciones DESC NULLS LAST;
+
+-- Consulta: Inventario crítico
+SELECT * FROM inventario_critico;
 */
