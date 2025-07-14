@@ -1,34 +1,37 @@
 Servigest
 ┣ src
 ┃ ┣ application
-┃ ┃ ┣ ports.jl
-┃ ┃ ┗ use_cases.jl
+┃ ┃ ┣ casos_uso.jl
+┃ ┃ ┗ puertos.jl
 ┃ ┣ controllers
-┃ ┃ ┣ cli_controller.jl
-┃ ┃ ┗ http_controller.jl
-┃ ┣ domain
-┃ ┃ ┣ business_rules.jl
-┃ ┃ ┗ entities.jl
-┃ ┣ infrastructure
+┃ ┃ ┣ controlador_cli.jl
+┃ ┃ ┗ controlador_http.jl
+┃ ┣ dominio
+┃ ┃ ┣ entidades.jl
+┃ ┃ ┗ reglas_negocio.jl
+┃ ┣ infraestructura
 ┃ ┃ ┣ data
 ┃ ┃ ┃ ┗ base_datos_rf.sql
-┃ ┃ ┣ persistence
-┃ ┃ ┃ ┗ memory_repository.jl
+┃ ┃ ┣ persistencia
+┃ ┃ ┃ ┣ repositorio_memoria.jl
+┃ ┃ ┃ ┗ repositorio_sqlite.jl
 ┃ ┃ ┗ services
-┃ ┃ ┃ ┗ notification_service.jl
+┃ ┃ ┃ ┗ servicio_notificacion.jl
 ┃ ┣ ui
 ┃ ┃ ┣ web
-┃ ┃ ┃ ┣ static
-┃ ┃ ┃ ┣ templates
-┃ ┃ ┃ ┗ web_presenter.jl
-┃ ┃ ┗ cli_presenter.jl
+┃ ┃ ┃ ┣ estaticos
+┃ ┃ ┃ ┣ plantillas
+┃ ┃ ┃ ┗ presentador_web.jl
+┃ ┃ ┗ presentador_cli.jl
 ┃ ┣ .julia
+┃ ┣ Servigest.jl
 ┃ ┗ WorkOrderSystem.jl
 ┣ test
-┃ ┣ application_tests.jl
-┃ ┣ domain_tests.jl
-┃ ┣ infrastructure_tests.jl
-┃ ┗ runtests.jl
+┃ ┣ correr_pruebas.jl
+┃ ┣ pruebas_aplicacion.jl
+┃ ┣ pruebas_dominio.jl
+┃ ┗ pruebas_infraestructura.jl
 ┣ Manifest.toml
 ┣ Project.toml
-┗ README.md
+┣ README.md
+┗ tree.tree
