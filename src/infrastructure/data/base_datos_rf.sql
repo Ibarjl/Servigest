@@ -2,27 +2,42 @@
 -- BASE DE DATOS DE COMPONENTES Y EQUIPOS RF - POSTGRESQL
 -- ===================================
 
--- Crear tipos ENUM personalizados
-CREATE TYPE tipo_equipo_enum AS ENUM (
-    'Transmisor', 'Receptor', 'Transceptor', 'Analizador', 
-    'Generador', 'Medidor', 'Amplificador', 'Antena', 'Otro'
+-- Crear tablas de referencia para valores tipo ENUM (SQL Server no soporta ENUM)
+CREATE TABLE tipo_equipo (
+    id_tipo INT IDENTITY PRIMARY KEY,
+    nombre NVARCHAR(50) UNIQUE NOT NULL
 );
+INSERT INTO tipo_equipo (nombre) VALUES
+('Transmisor'), ('Receptor'), ('Transceptor'), ('Analizador'),
+('Generador'), ('Medidor'), ('Amplificador'), ('Antena'), ('Otro');
 
-CREATE TYPE estado_equipo_enum AS ENUM (
-    'Operativo', 'En reparación', 'Fuera de servicio', 'En calibración'
+CREATE TABLE estado_equipo (
+    id_estado INT IDENTITY PRIMARY KEY,
+    nombre NVARCHAR(50) UNIQUE NOT NULL
 );
+INSERT INTO estado_equipo (nombre) VALUES
+('Operativo'), ('En reparación'), ('Fuera de servicio'), ('En calibración');
 
-CREATE TYPE estado_reparacion_enum AS ENUM (
-    'En progreso', 'Completada', 'Pendiente de partes', 'Cancelada'
+CREATE TABLE estado_reparacion (
+    id_estado INT IDENTITY PRIMARY KEY,
+    nombre NVARCHAR(50) UNIQUE NOT NULL
 );
+INSERT INTO estado_reparacion (nombre) VALUES
+('En progreso'), ('Completada'), ('Pendiente de partes'), ('Cancelada');
 
-CREATE TYPE prioridad_enum AS ENUM (
-    'Baja', 'Media', 'Alta', 'Crítica'
+CREATE TABLE prioridad (
+    id_prioridad INT IDENTITY PRIMARY KEY,
+    nombre NVARCHAR(50) UNIQUE NOT NULL
 );
+INSERT INTO prioridad (nombre) VALUES
+('Baja'), ('Media'), ('Alta'), ('Crítica');
 
-CREATE TYPE resultado_calibracion_enum AS ENUM (
-    'Aprobado', 'Rechazado', 'Aprobado con ajustes'
+CREATE TABLE resultado_calibracion (
+    id_resultado INT IDENTITY PRIMARY KEY,
+    nombre NVARCHAR(50) UNIQUE NOT NULL
 );
+INSERT INTO resultado_calibracion (nombre) VALUES
+('Aprobado'), ('Rechazado'), ('Aprobado con ajustes');
 
 -- Tabla de categorías de componentes
 CREATE TABLE categorias_componentes (
@@ -63,44 +78,44 @@ CREATE TABLE componentes_rf (
     frecuencia_min_mhz DECIMAL(10,3),
     frecuencia_max_mhz DECIMAL(10,3),
     potencia_max_w DECIMAL(8,3),
-    voltaje_operacion_v DECIMAL(6,2),
-    temperatura_min_c INTEGER,
-    temperatura_max_c INTEGER,
-    impedancia_ohm DECIMAL(8,2),
-    ganancia_db DECIMAL(6,2),
-    vswr_max DECIMAL(4,2),
-    precio_usd DECIMAL(8,2),
-    stock_actual INTEGER DEFAULT 0,
-    stock_minimo INTEGER DEFAULT 1,
-    ubicacion_almacen VARCHAR(50),
-    datasheet_url VARCHAR(255),
-    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Tabla de equipos RF
 CREATE TABLE equipos_rf (
-    id_equipo SERIAL PRIMARY KEY,
+    id_equipo INT IDENTITY PRIMARY KEY,
     numero_serie VARCHAR(50) UNIQUE NOT NULL,
     modelo VARCHAR(100) NOT NULL,
-    id_fabricante INTEGER REFERENCES fabricantes(id_fabricante),
-    tipo_equipo tipo_equipo_enum,
+    id_fabricante INT FOREIGN KEY REFERENCES fabricantes(id_fabricante),
+    id_tipo_equipo INT FOREIGN KEY REFERENCES tipo_equipo(id_tipo),
     frecuencia_min_mhz DECIMAL(10,3),
     frecuencia_max_mhz DECIMAL(10,3),
     potencia_salida_w DECIMAL(8,3),
     voltaje_alimentacion_v DECIMAL(6,2),
     consumo_corriente_a DECIMAL(6,3),
     fecha_adquisicion DATE,
-    estado estado_equipo_enum,
+    id_estado INT FOREIGN KEY REFERENCES estado_equipo(id_estado),
     ubicacion VARCHAR(100),
     responsable VARCHAR(100),
     valor_usd DECIMAL(10,2),
     manual_url VARCHAR(255),
-    calibracion_requerida BOOLEAN DEFAULT FALSE,
+    calibracion_requerida BIT DEFAULT 0,
     proxima_calibracion DATE,
     notas TEXT
 );
-
--- Tabla de historial de reparaciones
+    frecuencia_min_mhz DECIMAL(10,3),
+    frecuencia_max_mhz DECIMAL(10,3),
+CREATE TABLE historial_reparaciones (
+    id_reparacion INT IDENTITY PRIMARY KEY,
+    id_equipo INT FOREIGN KEY REFERENCES equipos_rf(id_equipo),
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE,
+    tecnico_asignado VARCHAR(100),
+    problema_reportado TEXT,
+    diagnostico TEXT,
+    solucion_aplicada TEXT,
+    componentes_reemplazados TEXT,
+    costo_reparacion DECIMAL(8,2),
+    tiempo_reparacion_horas DECIMAL(5,1),
+    id_estado_reparacion INT FOREIGN KEY REFERENCES estado_reparacion(id_estado),
+    id_prioridad INT FOREIGN KEY REFERENCES prioridad(id_prioridad)
+);
 CREATE TABLE historial_reparaciones (
     id_reparacion SERIAL PRIMARY KEY,
     id_equipo INTEGER REFERENCES equipos_rf(id_equipo),
@@ -111,18 +126,18 @@ CREATE TABLE historial_reparaciones (
     diagnostico TEXT,
     solucion_aplicada TEXT,
     componentes_reemplazados TEXT,
-    costo_reparacion DECIMAL(8,2),
-    tiempo_reparacion_horas DECIMAL(5,1),
-    estado_reparacion estado_reparacion_enum,
-    prioridad prioridad_enum
-);
-
--- Tabla de relación componentes usados en reparaciones
-CREATE TABLE componentes_usados_reparacion (
-    id SERIAL PRIMARY KEY,
-    id_reparacion INTEGER REFERENCES historial_reparaciones(id_reparacion),
-    id_componente INTEGER REFERENCES componentes_rf(id_componente),
-    cantidad_usada INTEGER
+CREATE TABLE calibraciones (
+    id_calibracion INT IDENTITY PRIMARY KEY,
+    id_equipo INT FOREIGN KEY REFERENCES equipos_rf(id_equipo),
+    fecha_calibracion DATE NOT NULL,
+    tecnico VARCHAR(100),
+    laboratorio VARCHAR(100),
+    certificado_numero VARCHAR(50),
+    id_resultado INT FOREIGN KEY REFERENCES resultado_calibracion(id_resultado),
+    tolerancia_cumplida BIT,
+    proxima_fecha DATE,
+    costo DECIMAL(8,2),
+    observaciones TEXT
 );
 
 -- Tabla de calibraciones
@@ -224,21 +239,7 @@ INSERT INTO historial_reparaciones (id_equipo, fecha_inicio, fecha_fin, tecnico_
 -- Insertar componentes usados en reparaciones
 INSERT INTO componentes_usados_reparacion (id_reparacion, id_componente, cantidad_usada) VALUES
 (5, 6, 1),  -- SMA-F-CONN para reparación 5
-(7, 2, 1);  -- ERA-3SM+ para reparación 7
-
--- Insertar calibraciones
-INSERT INTO calibraciones (id_equipo, fecha_calibracion, tecnico, laboratorio, certificado_numero, resultado, tolerancia_cumplida, proxima_fecha, costo, observaciones) VALUES
-(1, '2024-01-15', 'Carlos Méndez', 'Lab Certificado XYZ', 'CAL-2024-0115', 'Aprobado', TRUE, '2025-01-15', 450.00, 'Calibración anual completa'),
-(2, '2023-12-20', 'Ana Torres', 'Metrología Nacional', 'MN-2023-1220', 'Aprobado', TRUE, '2024-12-20', 850.00, 'Calibración trazable'),
-(5, '2024-05-30', 'Carlos Méndez', 'Lab Certificado XYZ', 'CAL-2024-0530', 'Aprobado con ajustes', TRUE, '2025-05-30', 220.00, 'Ajuste menor en ganancia'),
-(8, '2023-12-15', 'Roberto Silva', 'Servicio Keysight', 'KS-2023-1215', 'Aprobado', TRUE, '2024-12-15', 380.00, 'Servicio oficial del fabricante'),
-(10, '2024-04-25', 'Ana Torres', 'Lab Certificado XYZ', 'CAL-2024-0425', 'Aprobado', TRUE, '2025-04-25', 320.00, 'Frecuencia y amplitud verificadas'),
-(11, '2024-01-20', 'Elena Ruiz', 'Metrología Nacional', 'MN-2024-0120', 'Aprobado', TRUE, '2025-01-20', 650.00, 'Calibración inicial del equipo');
-
--- ===================================
--- VISTAS ÚTILES PARA TÉCNICOS
--- ===================================
-
+GO
 -- Vista de componentes con bajo stock
 CREATE VIEW componentes_bajo_stock AS
 SELECT 
@@ -254,23 +255,23 @@ FROM componentes_rf c
 JOIN categorias_componentes cat ON c.id_categoria = cat.id_categoria
 JOIN fabricantes f ON c.id_fabricante = f.id_fabricante
 WHERE c.stock_actual <= c.stock_minimo;
-
+GO
 -- Vista de equipos que requieren calibración próxima
 CREATE VIEW equipos_calibracion_proxima AS
 SELECT 
     e.numero_serie,
     e.modelo,
     f.nombre AS fabricante,
-    e.tipo_equipo,
+    t.nombre AS tipo_equipo,
     e.ubicacion,
     e.responsable,
     e.proxima_calibracion,
-    (e.proxima_calibracion - CURRENT_DATE) AS dias_restantes
+    DATEDIFF(DAY, GETDATE(), e.proxima_calibracion) AS dias_restantes
 FROM equipos_rf e
 JOIN fabricantes f ON e.id_fabricante = f.id_fabricante
-WHERE e.calibracion_requerida = TRUE 
-AND e.proxima_calibracion <= (CURRENT_DATE + INTERVAL '30 days');
-
+JOIN tipo_equipo t ON e.id_tipo_equipo = t.id_tipo
+WHERE e.calibracion_requerida = 1
+GO
 -- Vista de reparaciones pendientes
 CREATE VIEW reparaciones_pendientes AS
 SELECT 
@@ -280,13 +281,13 @@ SELECT
     r.fecha_inicio,
     r.tecnico_asignado,
     r.problema_reportado,
-    r.estado_reparacion,
-    r.prioridad,
-    (CURRENT_DATE - r.fecha_inicio) AS dias_transcurridos
+    er.nombre AS estado_reparacion,
+    p.nombre AS prioridad,
+    DATEDIFF(DAY, r.fecha_inicio, GETDATE()) AS dias_transcurridos
 FROM historial_reparaciones r
 JOIN equipos_rf e ON r.id_equipo = e.id_equipo
-WHERE r.estado_reparacion IN ('En progreso', 'Pendiente de partes');
-
+JOIN estado_reparacion er ON r.id_estado_reparacion = er.id_estado
+GO
 -- Vista resumen de costos de reparación por equipo
 CREATE VIEW resumen_costos_reparacion AS
 SELECT 
@@ -294,9 +295,40 @@ SELECT
     e.modelo,
     f.nombre AS fabricante,
     COUNT(r.id_reparacion) AS total_reparaciones,
-    COALESCE(SUM(r.costo_reparacion), 0) AS costo_total,
-    COALESCE(AVG(r.costo_reparacion), 0) AS costo_promedio,
-    COALESCE(SUM(r.tiempo_reparacion_horas), 0) AS tiempo_total_horas
+    ISNULL(SUM(r.costo_reparacion), 0) AS costo_total,
+    ISNULL(AVG(r.costo_reparacion), 0) AS costo_promedio,
+    ISNULL(SUM(r.tiempo_reparacion_horas), 0) AS tiempo_total_horas
+FROM equipos_rf e
+JOIN fabricantes f ON e.id_fabricante = f.id_fabricante
+LEFT JOIN historial_reparaciones r ON e.id_equipo = r.id_equipo
+GROUP BY e.id_equipo, e.numero_serie, e.modelo, f.nombre;
+GO
+-- Vista de equipos por estado
+CREATE VIEW equipos_por_estado AS
+SELECT 
+    e.id_estado,
+    es.nombre AS estado,
+    COUNT(*) AS cantidad_equipos,
+    ROUND(AVG(e.valor_usd), 2) AS valor_promedio
+FROM equipos_rf e
+JOIN estado_equipo es ON e.id_estado = es.id_estado
+GO
+-- Vista de inventario crítico
+CREATE VIEW inventario_critico AS
+SELECT 
+    c.codigo_parte,
+    c.nombre,
+    cat.nombre AS categoria,
+    c.stock_actual,
+    c.stock_minimo,
+    (c.stock_minimo - c.stock_actual) AS deficit,
+    c.precio_usd,
+    (c.precio_usd * (c.stock_minimo - c.stock_actual)) AS costo_reposicion
+FROM componentes_rf c
+JOIN categorias_componentes cat ON c.id_categoria = cat.id_categoria
+WHERE c.stock_actual < c.stock_minimo
+ORDER BY deficit DESC;
+GO
 FROM equipos_rf e
 JOIN fabricantes f ON e.id_fabricante = f.id_fabricante
 LEFT JOIN historial_reparaciones r ON e.id_equipo = r.id_equipo

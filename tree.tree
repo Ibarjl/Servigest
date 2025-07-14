@@ -1,0 +1,34 @@
+Servigest
+┣ src
+┃ ┣ application
+┃ ┃ ┣ ports.jl
+┃ ┃ ┗ use_cases.jl
+┃ ┣ controllers
+┃ ┃ ┣ cli_controller.jl
+┃ ┃ ┗ http_controller.jl
+┃ ┣ domain
+┃ ┃ ┣ business_rules.jl
+┃ ┃ ┗ entities.jl
+┃ ┣ infrastructure
+┃ ┃ ┣ data
+┃ ┃ ┃ ┗ base_datos_rf.sql
+┃ ┃ ┣ persistence
+┃ ┃ ┃ ┗ memory_repository.jl
+┃ ┃ ┗ services
+┃ ┃ ┃ ┗ notification_service.jl
+┃ ┣ ui
+┃ ┃ ┣ web
+┃ ┃ ┃ ┣ static
+┃ ┃ ┃ ┣ templates
+┃ ┃ ┃ ┗ web_presenter.jl
+┃ ┃ ┗ cli_presenter.jl
+┃ ┣ .julia
+┃ ┗ WorkOrderSystem.jl
+┣ test
+┃ ┣ application_tests.jl
+┃ ┣ domain_tests.jl
+┃ ┣ infrastructure_tests.jl
+┃ ┗ runtests.jl
+┣ Manifest.toml
+┣ Project.toml
+┗ README.md
