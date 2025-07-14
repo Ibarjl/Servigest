@@ -390,7 +390,7 @@ BEGIN
     SET stock_actual = stock_actual - NEW.cantidad_usada
     WHERE id_componente = NEW.id_componente;
     
-    RETURN NEW;º
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
